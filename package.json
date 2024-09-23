@@ -20,7 +20,8 @@
     "./providers/*": "./build/providers/*.js",
     "./services/*": "./build/services/*.js",
     "./commands": "./build/commands/main.js",
-    "./errors": "./build/src/errors/main.js"
+    "./errors": "./build/src/errors/main.js",
+    "./mixins": "./build/src/mixins/main.js"
   },
   "scripts": {
     "clean": "del-cli build",
