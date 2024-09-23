@@ -38,9 +38,6 @@ export const configureSuite: Config['configureSuite'] = (suite) => {
           app.migrationsPath('00000_create_users_table.ts')
         )
 
-        const command = await ace.create(Configure, ['../../index.js'])
-        await command.exec()
-
         await testUtils.db().migrate()
         return testUtils.httpServer().start()
       })

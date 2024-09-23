@@ -98,7 +98,7 @@ export function ManagesSubscriptions<Model extends Constructor>(superclass: Mode
     }
 
     async hasExpiredTrial(type = 'default', price?: string): Promise<boolean> {
-      if (type === 'default' && this.onGenericTrial()) {
+      if (type === 'default' && this.hasExpiredGenericTrial()) {
         return true
       }
 
