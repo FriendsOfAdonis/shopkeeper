@@ -809,7 +809,7 @@ test.group('Subscriptions', (group) => {
     const invoice = await subscription.previewInvoice(otherPrice.id)
 
     assert.equal(invoice?.asStripeInvoice().status, 'draft')
-    assert.equal(invoice?.total(), 1000)
+    assert.equal(invoice?.rawTotal(), 1000)
   })
 
   test('invoice subscription directly', async ({ assert }) => {
@@ -822,6 +822,6 @@ test.group('Subscriptions', (group) => {
     const invoice = await subscription.invoice()
 
     assert.equal(invoice.asStripeInvoice().status, 'paid')
-    assert.equal(invoice?.total(), 2000)
+    assert.equal(invoice?.rawTotal(), 2000)
   })
 })

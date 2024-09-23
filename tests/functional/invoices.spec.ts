@@ -74,7 +74,7 @@ test.group('Invoices', () => {
     })
 
     assert.instanceOf(invoice, Invoice)
-    assert.equal(invoice.total(), 50000)
+    assert.equal(invoice.rawTotal(), 50000)
     assert.equal(
       await invoice.invoiceLineItems().then((l) => l[0].price?.tax_behavior),
       'exclusive'
