@@ -1,7 +1,7 @@
 {
   "name": "@foadonis/shopkeeper",
   "description": "",
-  "version": "0.0.1-6",
+  "version": "0.0.1-7",
   "engines": {
     "node": ">=20.6.0"
   },
