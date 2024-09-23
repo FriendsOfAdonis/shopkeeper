@@ -1,7 +1,7 @@
 {
   "name": "@foadonis/shopkeeper",
   "description": "",
-  "version": "0.0.1-0",
+  "version": "0.0.1-1",
   "engines": {
     "node": ">=20.6.0"
   },
@@ -94,7 +94,8 @@
     "message": "chore(release): %s",
     "tag": "latest",
     "branch": "main",
-    "anyBranch": false
+    "anyBranch": false,
+    "releaseDraft": true
   },
   "c8": {
     "reporter": [
