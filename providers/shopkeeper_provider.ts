@@ -5,19 +5,56 @@ import emitter from '@adonisjs/core/services/emitter'
 import { handleCustomerSubscriptionCreated } from '../src/handlers/handle_customer_subscription_created.js'
 import { handleCustomerSubscriptionUpdated } from '../src/handlers/handle_customer_subscription_updated.js'
 import { handleCustomerSubscriptionDeleted } from '../src/handlers/handle_customer_subscription_deleted.js'
+import { handleWebhook } from '../src/handlers/handle_webhooks.js'
+import { InvalidConfigurationError } from '../src/errors/invalid_configuration.js'
 
 export default class ShopkeeperProvider {
-  constructor(protected app: ApplicationService) {}
+  #config: Required<ShopkeeperConfig>
+
+  constructor(protected app: ApplicationService) {
+    this.#config = this.app.config.get<Required<ShopkeeperConfig>>('shopkeeper')
+  }
 
   register() {
     this.app.container.singleton(Shopkeeper, async () => {
-      const config = this.app.config.get<ShopkeeperConfig>('shopkeeper')
-      return new Shopkeeper(config)
+      const [customerModel, subscriptionModel, subscriptionItemModel] = await Promise.all([
+        this.#config.models.customerModel().then((i) => i.default),
+        this.#config.models.subscriptionModel().then((i) => i.default),
+        this.#config.models.subscriptionItemModel().then((i) => i.default),
+      ])
+
+      return new Shopkeeper(this.#config, customerModel, subscriptionModel, subscriptionItemModel)
     })
   }
 
-  start() {
+  async boot() {
+    await this.registerRoutes()
+  }
+
+  async start() {
     this.registerWebhookListeners()
+  }
+
+  async registerRoutes() {
+    if (this.#config.registerRoutes) {
+      const router = await this.app.container.make('router')
+
+      const route = router
+        .post('/stripe/webhook', (ctx) => handleWebhook(ctx))
+        .as('shopkeeper.webhook')
+
+      if (this.#config.webhook.secret) {
+        if (this.app.inProduction) {
+          throw InvalidConfigurationError.webhookSecretInProduction()
+        }
+
+        const middleware = router.named({
+          stripeWebhook: () => import('../src/middlewares/stripe_webhook_middleware.js'),
+        })
+
+        route.middleware(middleware.stripeWebhook())
+      }
+    }
   }
 
   registerWebhookListeners() {

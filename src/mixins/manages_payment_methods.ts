@@ -1,6 +1,6 @@
 import Stripe from 'stripe'
 import { PaymentMethod } from '../payment_method.js'
-import { ManagesCustomerI, WithManagesCustomer } from './manages_customer.js'
+import { WithManagesCustomer } from './manages_customer.js'
 import { NormalizeConstructor } from '@poppinss/utils/types'
 
 export interface ManagesPaymentMethodsI {

@@ -1,7 +1,6 @@
 import { BaseModel, belongsTo, column, hasMany } from '@adonisjs/lucid/orm'
 import type { BelongsTo, HasMany } from '@adonisjs/lucid/types/relations'
 import { DateTime } from 'luxon'
-import { SubscriptionItem } from './subscription_item.js'
 import Stripe from 'stripe'
 import { compose } from '@adonisjs/core/helpers'
 import { ManagesStripe } from '../mixins/manages_stripe.js'
@@ -11,13 +10,15 @@ import { IncompletePaymentError } from '../errors/incomplete_payment.js'
 import { Invoice } from '../invoice.js'
 import { Payment } from '../payment.js'
 import { Discount } from '../discount.js'
-import { SubscriptionUpdateError } from '../errors/subscription_update_failure.js'
+import { SubscriptionUpdateFailureError } from '../errors/subscription_update_failure.js'
 import shopkeeper from '../../services/shopkeeper.js'
 import { AllowsCoupon } from '../mixins/allows_coupons.js'
 import { HandlesPaymentFailures } from '../mixins/handles_payment_failures.js'
 import { InteractWithPaymentBehavior } from '../mixins/interacts_with_payment_behavior.js'
 import { Prorates } from '../mixins/prorates.js'
 import is from '@adonisjs/core/helpers/is'
+import SubscriptionItem from './subscription_item.js'
+import { InvalidArgumentError } from '../errors/invalid_argument.js'
 
 type SwapPricesParam =
   | string
@@ -25,7 +26,7 @@ type SwapPricesParam =
   | Stripe.SubscriptionUpdateParams.Item[]
   | Record<string, Stripe.SubscriptionUpdateParams.Item>
 
-export class Subscription extends compose(
+export default class Subscription extends compose(
   BaseModel,
   ManagesStripe(false),
   AllowsCoupon,
@@ -55,7 +56,7 @@ export class Subscription extends compose(
   @column()
   declare quantity: number | null
 
-  @hasMany(() => SubscriptionItem)
+  @hasMany(() => shopkeeper.subscriptionItemModel)
   declare items: HasMany<typeof SubscriptionItem>
 
   @column.dateTime()
@@ -112,10 +113,8 @@ export class Subscription extends compose(
    * Get the subscription item for the given price.
    */
   findItemOrFail(price: string): Promise<SubscriptionItem> {
-    return this.items.model.findOrFail({
-      subscriptionId: this.id,
-      stripePrice: price,
-    })
+    // @ts-ignore -- Lucid type issue
+    return this.related('items').query().where('stripePrice', price).firstOrFail()
   }
 
   /**
@@ -147,8 +146,9 @@ export class Subscription extends compose(
   active(): boolean {
     return (
       !this.ended() &&
-      (!shopkeeper.config.deactiveIncomplete || this.stripeStatus !== 'incomplete') &&
-      (!shopkeeper.config.deactivatePastDue || this.stripeStatus !== 'past_due') &&
+      (!shopkeeper.config.keepIncompleteSubscriptionsActive ||
+        this.stripeStatus !== 'incomplete') &&
+      (!shopkeeper.config.keepPastDueSubscriptionsActive || this.stripeStatus !== 'past_due') &&
       this.stripeStatus !== 'unpaid'
     )
   }
@@ -302,7 +302,7 @@ export class Subscription extends compose(
   /**
    * Report usage for a metered product.
    */
-  async reportUsage(quantity = 1, timestamp?: number, price?: string): Promise<unknown> {
+  async reportUsage(quantity = 1, timestamp?: number, price?: string): Promise<Stripe.UsageRecord> {
     if (!price) {
       this.guardAgainstMultiplePrices()
     }
@@ -314,7 +314,7 @@ export class Subscription extends compose(
   /**
    * Report usage for specific price of a metered product.
    */
-  reportUsageFor(price: string, quantity = 1, timestamp?: number): Promise<unknown> {
+  reportUsageFor(price: string, quantity = 1, timestamp?: number): Promise<Stripe.UsageRecord> {
     return this.reportUsage(quantity, timestamp, price)
   }
 
@@ -324,7 +324,7 @@ export class Subscription extends compose(
   async usageRecords(
     params: Stripe.SubscriptionItemListUsageRecordSummariesParams = {},
     price?: string
-  ): Promise<unknown> {
+  ): Promise<Stripe.UsageRecordSummary[]> {
     if (!price) {
       this.guardAgainstMultiplePrices()
     }
@@ -339,7 +339,7 @@ export class Subscription extends compose(
   usageRecordsFor(
     price: string,
     params: Stripe.SubscriptionItemListUsageRecordSummariesParams = {}
-  ): Promise<unknown> {
+  ): Promise<Stripe.UsageRecordSummary[]> {
     return this.usageRecords(params, price)
   }
 
@@ -449,6 +449,7 @@ export class Subscription extends compose(
     }
 
     // Delete items that aren't attached to the subscription anymore
+    // @ts-ignore -- Lucid type issue
     await this.related('items').query().delete().whereNotIn('stripeId', subscriptionItemIds)
 
     await this.handlePaymentFailure(this)
@@ -460,7 +461,7 @@ export class Subscription extends compose(
    * Swap the subscription to new Stripe prices, and invoice immediately.
    */
   async swapAndInvoice(
-    prices: string[],
+    prices: string | string[],
     params: Stripe.SubscriptionUpdateParams = {}
   ): Promise<this> {
     this.alwaysInvoice()
@@ -564,28 +565,31 @@ export class Subscription extends compose(
    */
   async addPrice(
     price: string,
-    quantity = 1,
+    quantity: number | null = 1,
     params: Partial<Stripe.SubscriptionItemCreateParams> = {}
   ): Promise<this> {
     this.guardAgainstIncomplete()
 
+    // @ts-ignore -- Lucid type issue
+    await this.load('items')
     if (this.items.some((i) => i.stripePrice === price)) {
-      throw new Error('Duplicate price') // TODO: error
+      throw SubscriptionUpdateFailureError.duplicatePrice(this, price)
     }
 
     const stripeSubscriptionItem = await this.stripe.subscriptionItems.create({
       subscription: this.stripeId,
       price,
-      quantity,
+      quantity: quantity ?? undefined,
       tax_rates: await this.getPriceTaxRatesForPayload(price),
       payment_behavior: this.paymentBehavior(),
       proration_behavior: this.prorateBehavior(),
       ...params,
     })
 
-    await this.items.model.create({
-      subscriptionId: this.id,
+    // @ts-ignore -- Lucid type issue
+    await this.related('items').create({
       stripeId: stripeSubscriptionItem.id,
+      stripeProduct: stripeSubscriptionItem.price.product,
       stripePrice: stripeSubscriptionItem.price.id,
       quantity: stripeSubscriptionItem.quantity,
     })
@@ -609,7 +613,7 @@ export class Subscription extends compose(
    */
   addPriceAndInvoice(
     price: string,
-    quantity = 1,
+    quantity: number | null = 1,
     params: Partial<Stripe.SubscriptionItemCreateParams> = {}
   ): Promise<this> {
     this.alwaysInvoice()
@@ -623,7 +627,7 @@ export class Subscription extends compose(
     price: string,
     params: Partial<Stripe.SubscriptionItemCreateParams> = {}
   ): Promise<this> {
-    return this.addPrice(price, undefined, params)
+    return this.addPrice(price, null, params)
   }
 
   /**
@@ -633,7 +637,7 @@ export class Subscription extends compose(
     price: string,
     params: Partial<Stripe.SubscriptionItemCreateParams> = {}
   ): Promise<this> {
-    return this.addPriceAndInvoice(price, undefined, params)
+    return this.addPriceAndInvoice(price, null, params)
   }
 
   /**
@@ -887,6 +891,7 @@ export class Subscription extends compose(
    * Get the price tax rates for the Stripe payload.
    */
   async getPriceTaxRatesForPayload(price: string): Promise<string[] | null> {
+    // @ts-ignore -- Lucid type issue
     await this.load('user')
     return this.user.priceTaxRates()[price] ?? null
   }
@@ -939,7 +944,7 @@ export class Subscription extends compose(
    */
   guardAgainstIncomplete(): void {
     if (this.incomplete()) {
-      throw SubscriptionUpdateError.incompleteSubscription(this)
+      throw SubscriptionUpdateFailureError.incompleteSubscription(this)
     }
   }
 
@@ -948,7 +953,7 @@ export class Subscription extends compose(
    */
   guardAgainstMultiplePrices(): void {
     if (this.hasMultiplePrices()) {
-      throw new Exception(
+      throw new InvalidArgumentError(
         'This method requires a price argument since the subscription has multiple prices.'
       )
     }

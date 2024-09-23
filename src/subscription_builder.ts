@@ -2,7 +2,7 @@ import { DateTime } from 'luxon'
 import Stripe from 'stripe'
 import { Exception } from '@adonisjs/core/exceptions'
 import { Checkout } from './checkout.js'
-import { Subscription } from './models/subscription.js'
+import Subscription from './models/subscription.js'
 import { compose } from '@adonisjs/core/helpers'
 import { HandlesTaxes } from './mixins/handles_taxes.js'
 import { Empty } from './types.js'
@@ -100,7 +100,7 @@ export class SubscriptionBuilder extends compose(
    * Set a metered price on the subscription builder.
    */
   meteredPrice(price: string): this {
-    return this.price(price)
+    return this.price(price, null)
   }
 
   /**
@@ -271,16 +271,17 @@ export class SubscriptionBuilder extends compose(
 
     const billingCycleAnchor = trialEnd ? this.#billingCycleAnchor : null
 
-    return Checkout.customer(this.#owner, this).create(
+    return Checkout.customer(this.#owner as any, this).create(
       [],
       {
-        line_items: this.#items,
+        // TODO: Avoid as any
+        line_items: this.#items as any,
         mode: 'subscription',
         subscription_data: {
           default_tax_rates: this.getTaxRatesForPayload() ?? undefined,
           trial_end: trialEnd?.toUnixInteger(),
           billing_cycle_anchor: billingCycleAnchor ?? undefined,
-          proration_behavior: billingCycleAnchor ? this.prorateBehavior() : undefined,
+          proration_behavior: billingCycleAnchor ? (this.prorateBehavior() as any) : undefined, // TODO: Avoid as
           metadata: {
             ...this.#metadata,
             ...(this.#type && {

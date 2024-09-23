@@ -1,5 +1,5 @@
 {
-  "name": "adonis-shopkeeper",
+  "name": "@foadonis/shopkeeper",
   "description": "",
   "version": "0.0.0",
   "engines": {
@@ -17,11 +17,10 @@
   "exports": {
     ".": "./build/index.js",
     "./types": "./build/src/types.js",
-    "./fields": "./build/src/fields/main.js",
-    "./menu": "./build/src/menu/main.js",
     "./providers/*": "./build/providers/*.js",
     "./services/*": "./build/services/*.js",
-    "./commands": "./build/commands/main.js"
+    "./commands": "./build/commands/main.js",
+    "./errors": "./build/src/errors/main.js"
   },
   "scripts": {
     "clean": "del-cli build",
@@ -65,7 +64,7 @@
     "copyfiles": "^2.4.1",
     "del-cli": "^5.1.0",
     "edge.js": "^6.0.2",
-    "eslint": "^8.57.0",
+    "eslint": "^9.9.0",
     "html-entities": "^2.5.2",
     "np": "^10.0.6",
     "prettier": "^3.3.2",

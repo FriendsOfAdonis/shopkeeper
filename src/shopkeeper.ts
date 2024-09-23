@@ -1,21 +1,29 @@
 import Stripe from 'stripe'
 import { ShopkeeperConfig } from './types.js'
 import { WithBillable } from './mixins/billable.js'
-import { Exception } from '@adonisjs/core/exceptions'
+import { NormalizeConstructor } from '@poppinss/utils/types'
+import Subscription from './models/subscription.js'
+import SubscriptionItem from './models/subscription_item.js'
 
 export class Shopkeeper {
   readonly #config: ShopkeeperConfig
   readonly #stripe: Stripe
-  #customerModel?: WithBillable
+  #customerModel: WithBillable
+  #subscriptionModel: NormalizeConstructor<typeof Subscription>
+  #subscriptionItemModel: NormalizeConstructor<typeof SubscriptionItem>
 
-  constructor(config: ShopkeeperConfig) {
+  constructor(
+    config: ShopkeeperConfig,
+    customerModel: WithBillable,
+    subscriptionModel: NormalizeConstructor<typeof Subscription>,
+    subscriptionItemModel: NormalizeConstructor<typeof SubscriptionItem>
+  ) {
     this.#config = config
+    this.#customerModel = customerModel
+    this.#subscriptionModel = subscriptionModel
+    this.#subscriptionItemModel = subscriptionItemModel
 
-    const {
-      stripe: { apiKey, ...stripe },
-    } = config
-
-    this.#stripe = new Stripe(apiKey, stripe)
+    this.#stripe = new Stripe(config.secret, config.stripe)
   }
 
   public get stripe(): Stripe {
@@ -30,7 +38,9 @@ export class Shopkeeper {
    * Format the given amount into a displayable currency.
    */
   public formatAmount(amount: number, currency?: string): string {
-    return amount.toString()
+    return Intl.NumberFormat(this.config.currencyLocale, { style: 'currency', currency }).format(
+      amount
+    )
   }
 
   /**
@@ -48,15 +58,16 @@ export class Shopkeeper {
     return billable
   }
 
-  public set customerModel(model: WithBillable) {
-    this.#customerModel = model
+  public get customerModel(): WithBillable {
+    return this.#customerModel
   }
 
-  public get customerModel(): WithBillable {
-    if (!this.#customerModel) {
-      throw new Exception('No customer model') // TODO: Error
-    }
-    return this.#customerModel
+  public get subscriptionModel(): NormalizeConstructor<typeof Subscription> {
+    return this.#subscriptionModel
+  }
+
+  public get subscriptionItemModel(): NormalizeConstructor<typeof SubscriptionItem> {
+    return this.#subscriptionItemModel
   }
 
   public get calculateTaxes(): boolean {

@@ -8,6 +8,7 @@ import { PromotionCode } from '../promotion_code.js'
 import { CustomerBalanceTransaction } from '../customer_balance_transaction.js'
 import { ManagesStripeI, WithManagesStripe } from './manages_stripe.js'
 import { NormalizeConstructor } from '@poppinss/utils/types'
+import { WithBillable } from './billable.js'
 
 export interface ManagesCustomerI extends ManagesStripeI<true> {
   /**
@@ -398,8 +399,10 @@ export function ManagesCustomer<Model extends Constructor>(superclass: Model) {
         ...params,
       })
 
+      // TODO: Fix as unknown
       return transactions.data.map(
-        (transaction) => new CustomerBalanceTransaction(this, transaction)
+        (transaction) =>
+          new CustomerBalanceTransaction(this as unknown as WithBillable['prototype'], transaction)
       )
     }
 
@@ -435,7 +438,8 @@ export function ManagesCustomer<Model extends Constructor>(superclass: Model) {
         ...params,
       })
 
-      return new CustomerBalanceTransaction(this, transaction)
+      // TODO: Fix as any
+      return new CustomerBalanceTransaction(this as any, transaction)
     }
 
     preferredCurrency(): string {

@@ -1,6 +1,6 @@
 import { BaseModel, belongsTo, column } from '@adonisjs/lucid/orm'
 import type { BelongsTo } from '@adonisjs/lucid/types/relations'
-import { Subscription } from './subscription.js'
+import Subscription from './subscription.js'
 import { compose } from '@adonisjs/core/helpers'
 import { HandlesPaymentFailures } from '../mixins/handles_payment_failures.js'
 import { InteractWithPaymentBehavior } from '../mixins/interacts_with_payment_behavior.js'
@@ -8,8 +8,9 @@ import { Prorates } from '../mixins/prorates.js'
 import Stripe from 'stripe'
 import { ManagesStripe } from '../mixins/manages_stripe.js'
 import { DateTime } from 'luxon'
+import shopkeeper from '../../services/shopkeeper.js'
 
-export class SubscriptionItem extends compose(
+export default class SubscriptionItem extends compose(
   BaseModel,
   ManagesStripe(false),
   HandlesPaymentFailures,
@@ -22,7 +23,7 @@ export class SubscriptionItem extends compose(
   @column()
   declare subscriptionId: number
 
-  @belongsTo(() => Subscription)
+  @belongsTo(() => shopkeeper.subscriptionModel)
   declare subscription: BelongsTo<typeof Subscription>
 
   @column()
@@ -158,10 +159,14 @@ export class SubscriptionItem extends compose(
   /**
    * Get the usage records for a metered product.
    */
-  usageRecords(
+  async usageRecords(
     params: Stripe.SubscriptionItemListUsageRecordSummariesParams = {}
-  ): Stripe.ApiListPromise<Stripe.UsageRecordSummary> {
-    return this.stripe.subscriptionItems.listUsageRecordSummaries(this.stripeId, params)
+  ): Promise<Stripe.UsageRecordSummary[]> {
+    const response = await this.stripe.subscriptionItems.listUsageRecordSummaries(
+      this.stripeId,
+      params
+    )
+    return response.data
   }
 
   /**

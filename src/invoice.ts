@@ -1,5 +1,5 @@
 import Stripe from 'stripe'
-import { ManagesInvoicesI, WithManagesInvoices } from './mixins/manages_invoices.js'
+import { WithManagesInvoices } from './mixins/manages_invoices.js'
 import { Tax } from './tax.js'
 import { Discount } from './discount.js'
 import { InvalidInvoiceError } from './errors/invalid_invoice.js'
@@ -216,8 +216,8 @@ export class Invoice {
     return (
       discounts.find((amount) =>
         typeof amount.discount === 'string'
-          ? amount.discount === discount.id
-          : amount.discount.id === discount.id
+          ? amount.discount === discount.asStripeDiscount().id
+          : amount.discount.id === discount.asStripeDiscount().id
       )?.amount ?? null
     )
   }
@@ -550,7 +550,7 @@ export class Invoice {
   /**
    * Get the Stripe model instance.
    */
-  owner(): ManagesInvoicesI {
+  owner(): WithManagesInvoices['prototype'] {
     return this.#owner
   }
 

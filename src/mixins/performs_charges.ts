@@ -109,7 +109,12 @@ export function PerformCharges<Model extends Constructor>(superclass: Model) {
       sessionParams: Stripe.Checkout.SessionCreateParams = {},
       customerParams: Stripe.CustomerCreateParams = {}
     ): Promise<Checkout> {
-      return Checkout.customer(this, this).create(items, sessionParams, customerParams)
+      // TODO: Avoid as any
+      return Checkout.customer(this as any, this as any).create(
+        items,
+        sessionParams,
+        customerParams
+      )
     }
 
     /**

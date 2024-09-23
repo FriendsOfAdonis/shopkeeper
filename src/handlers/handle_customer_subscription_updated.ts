@@ -1,7 +1,6 @@
 import Stripe from 'stripe'
 import shopkeeper from '../../services/shopkeeper.js'
 import { DateTime } from 'luxon'
-import { Subscription } from '../models/subscription.js'
 
 export async function handleCustomerSubscriptionUpdated(
   payload: Stripe.CustomerSubscriptionUpdatedEvent
@@ -13,7 +12,7 @@ export async function handleCustomerSubscriptionUpdated(
   const data = payload.data.object
   let subscription = await user.related('subscriptions').query().where('stripeId', data.id).first()
   if (!subscription) {
-    subscription = new Subscription()
+    subscription = new shopkeeper.subscriptionModel()
     subscription.stripeId = data.id
   }
 

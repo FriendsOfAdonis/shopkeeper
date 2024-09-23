@@ -3,66 +3,44 @@ import shopkeeper from '../../services/shopkeeper.js'
 
 type Constructor = new (...args: any[]) => {}
 
-export interface WithHandlesTaxes {
-  /**
-   * The IP address of the customer used to determine the tax location.
-   */
-  customerIpAddress: string | null
-
-  /**
-   * The pre-collected billing address used to estimate tax rates when performing "one-off" charges.
-   */
-  estimationBillingAddress: unknown[]
-
-  /**
-   * Indicates if Tax IDs should be collected during a Stripe Checkout session.
-   */
-  collectTaxIds: boolean
-
-  /**
-   * Set the The IP address of the customer used to determine the tax location.
-   */
-  withTaxIpAddress(ipAddress: string): void
-
-  /**
-   * Set a pre-collected billing address used to estimate tax rates when performing "one-off" charges.
-   */
-  withTaxAddress(country: string, postalCode?: string, state?: string): void
-
-  /**
-   * Get the payload for Stripe automatic tax calculation.
-   */
-  automaticTaxPayload(): unknown
-
-  /**
-   * Determine if automatic tax is enabled.
-   */
-  isAutomaticTaxEnabled(): boolean
-
-  /**
-   * Indicate that Tax IDs should be collected during a Stripe Checkout session.
-   */
-  withTaxIdsCollect(): void
-}
-
 export function HandlesTaxes<Model extends Constructor>(superclass: Model) {
   return class WithHandlesTaxes extends superclass implements WithHandlesTaxes {
+    /**
+     * The IP address of the customer used to determine the tax location.
+     */
     customerIpAddress: string | null = null
-    estimationBillingAddress: unknown[] = []
+
+    /**
+     * The pre-collected billing address used to estimate tax rates when performing "one-off" charges.
+     */
+    estimationBillingAddress: Partial<Stripe.Address> = {}
+
+    /**
+     * Indicates if Tax IDs should be collected during a Stripe Checkout session.
+     */
     collectTaxIds = false
 
+    /**
+     * Set the The IP address of the customer used to determine the tax location.
+     */
     withTaxIpAddress(ipAddress: string): void {
       this.customerIpAddress = ipAddress
     }
 
+    /**
+     * Set a pre-collected billing address used to estimate tax rates when performing "one-off" charges.
+     */
     withTaxAddress(country: string, postalCode?: string, state?: string): void {
       this.estimationBillingAddress = {
         country,
-        postalCode,
+        postal_code: postalCode,
         state,
       }
     }
 
+    /**
+     * Get the payload for Stripe automatic tax calculation.
+     */
     automaticTaxPayload(): Stripe.SubscriptionCreateParams.AutomaticTax {
       return {
         // TODO: Check if necessary
@@ -72,12 +50,20 @@ export function HandlesTaxes<Model extends Constructor>(superclass: Model) {
       }
     }
 
+    /**
+     * Determine if automatic tax is enabled.
+     */
     isAutomaticTaxEnabled(): boolean {
       return shopkeeper.calculateTaxes
     }
 
+    /**
+     * Indicate that Tax IDs should be collected during a Stripe Checkout session.
+     */
     withTaxIdsCollect(): void {
       this.collectTaxIds = true
     }
   }
 }
+
+export type WithHandlesTaxes = ReturnType<typeof HandlesTaxes>

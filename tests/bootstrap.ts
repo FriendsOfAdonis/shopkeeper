@@ -9,9 +9,6 @@ import app from '@adonisjs/core/services/app'
 import { copyFile, mkdir, rmdir } from 'node:fs/promises'
 import testUtils from '@adonisjs/core/services/test_utils'
 import { expect } from '@japa/expect'
-import shopkeeper from '../services/shopkeeper.js'
-import User from './fixtures/user.js'
-import { handleWebhook } from '../src/handlers/handle_webhooks.js'
 
 export const plugins: Config['plugins'] = [
   assert(),
@@ -31,13 +28,9 @@ export const configureSuite: Config['configureSuite'] = (suite) => {
   if (['functional'].includes(suite.name)) {
     return suite
       .setup(async () => {
-        shopkeeper.customerModel = User
-
         const router = await app.container.make('router')
 
         router.use([() => import('@adonisjs/core/bodyparser_middleware')])
-
-        router.post('/stripe/webhook', (ctx) => handleWebhook(ctx)).as('stripe.webhook')
 
         await mkdir(app.migrationsPath(), { recursive: true })
         await copyFile(

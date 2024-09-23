@@ -11,10 +11,27 @@ export default {
   },
   config: {
     shopkeeper: defineConfig({
+      key: 'random',
+      secret: process.env.STRIPE_SECRET as string,
+
       currency: 'EUR',
-      stripe: {
-        apiKey: process.env.STRIPE_SECRET as string,
+      currencyLocale: 'fr-FR',
+
+      webhook: {
+        tolerance: 300,
+        events: [],
       },
+
+      models: {
+        customerModel: () => import('./fixtures/user.js'),
+        subscriptionModel: () => import('../src/models/subscription.js'),
+        subscriptionItemModel: () => import('../src/models/subscription_item.js'),
+      },
+
+      calculateTaxes: false,
+
+      keepIncompleteSubscriptionsActive: false,
+      keepPastDueSubscriptionsActive: false,
     }),
     database: defineDatabaseConfig({
       connection: 'sqlite',

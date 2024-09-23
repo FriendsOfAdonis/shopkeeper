@@ -1,7 +1,7 @@
 import { DateTime } from 'luxon'
 import { SubscriptionBuilder } from '../subscription_builder.js'
 import { HasMany } from '@adonisjs/lucid/types/relations'
-import { Subscription } from '../models/subscription.js'
+import Subscription from '../models/subscription.js'
 import { WithManagesPaymentMethods } from './manages_payment_methods.js'
 import { NormalizeConstructor } from '@poppinss/utils/types'
 import is from '@adonisjs/core/helpers/is'
@@ -139,6 +139,7 @@ export function ManagesSubscriptions<Model extends Constructor>(superclass: Mode
     }
 
     subscription(type?: string): Promise<Subscription | null> {
+      // @ts-ignore -- Lucid type issue
       return this.related('subscriptions')
         .query()
         .if(!!type, (q) => q.where('type', type!))

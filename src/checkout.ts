@@ -9,6 +9,7 @@ export class Checkout {
   /**
    * The Stripe model instance.
    */
+  // @ts-ignore -- Not used yet
   #owner: WithBillable['prototype'] | null
 
   /**

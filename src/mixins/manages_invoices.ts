@@ -1,5 +1,5 @@
 import Stripe from 'stripe'
-import { ManagesCustomerI } from './manages_customer.js'
+import { WithManagesCustomer } from './manages_customer.js'
 import { Invoice } from '../invoice.js'
 import { Exception } from '@adonisjs/core/exceptions'
 import { Payment } from '../payment.js'
@@ -7,8 +7,9 @@ import shopkeeper from '../../services/shopkeeper.js'
 import { checkStripeError } from '../utils/errors.js'
 import { WithHandlesTaxes } from './handles_taxes.js'
 import { InvalidInvoiceError } from '../errors/invalid_invoice.js'
+import { NormalizeConstructor } from '@poppinss/utils/types'
 
-type Constructor = new (...args: any[]) => ManagesCustomerI & WithHandlesTaxes
+type Constructor = NormalizeConstructor<WithHandlesTaxes & WithManagesCustomer>
 
 type TabItemParams = Partial<
   Omit<Stripe.InvoiceItemCreateParams, 'price_data'> & {
@@ -16,82 +17,11 @@ type TabItemParams = Partial<
   }
 >
 
-// TODO: Remove anys
-export interface ManagesInvoicesI {
-  /**
-   * Add an invoice item to the customer's upcoming invoice.
-   */
-  tab(description: string, amount?: number, params?: TabItemParams): Promise<Stripe.InvoiceItem>
-
-  /**
-   * Invoice the customer for the given Price ID and generate an invoice immediately.
-   */
-  invoiceFor(
-    description: string,
-    amount: number,
-    tabParams?: TabItemParams,
-    invoiceParams?: any
-  ): Promise<Invoice>
-
-  /**
-   * Add an invoice item for a specific Price ID to the customer's upcoming invoice.
-   */
-  tabPrice(price: string, quantity?: number, params?: TabItemParams): Promise<Stripe.InvoiceItem>
-
-  /**
-   * Invoice the customer for the given Price ID and generate an invoice immediately.
-   */
-  invoicePrice(
-    price: string,
-    quantity?: number,
-    tabParams?: TabItemParams,
-    invoiceParams?: any
-  ): Promise<Invoice>
-
-  /**
-   * Invoice the customer outside of the regular billing cycle.
-   */
-  invoice(params?: Stripe.InvoiceCreateParams & Stripe.InvoicePayParams): Promise<Invoice>
-
-  /**
-   * Create an invoice within Stripe.
-   */
-  createInvoice(params?: Stripe.InvoiceCreateParams): Promise<Invoice>
-
-  /**
-   * Get the customer's upcoming invoice.
-   */
-  upcomingInvoice(params?: Stripe.InvoiceRetrieveUpcomingParams): Promise<Invoice | null>
-
-  /**
-   * Find an invoice by ID.
-   */
-  findInvoice(id: string): Promise<Invoice | null>
-
-  /**
-   * Find an invoice or throw a 404 or 403 error.
-   */
-  findInvoiceOrFail(id: string): Promise<Invoice>
-
-  /**
-   * Create an invoice download Response.
-   */
-  downloadInvoice(id: string, data?: any, filename?: string): any
-
-  /**
-   * Get a collection of the customer's invoices.
-   */
-  invoices(includePending?: boolean, params?: Stripe.InvoiceListParams): Promise<Invoice[]>
-
-  /**
-   * Get an array of the customer's invoices, including pending invoices.
-   */
-  invoicesIncludingPending(params?: Stripe.InvoiceListParams): Promise<Invoice[]>
-}
-
 export function ManagesInvoices<Model extends Constructor>(superclass: Model) {
-  return class WithManagesInvoicesImpl extends superclass implements ManagesInvoicesI {
-    // TODO: This deserve a cleanup
+  return class WithManagesInvoicesImpl extends superclass {
+    /**
+     * Add an invoice item to the customer's upcoming invoice.
+     */
     tab(
       description: string,
       amount?: number,
@@ -126,6 +56,9 @@ export function ManagesInvoices<Model extends Constructor>(superclass: Model) {
       return this.stripe.invoiceItems.create(options as Stripe.InvoiceItemCreateParams)
     }
 
+    /**
+     * Invoice the customer for the given Price ID and generate an invoice immediately.
+     */
     async invoiceFor(
       description: string,
       amount: number,
@@ -136,6 +69,9 @@ export function ManagesInvoices<Model extends Constructor>(superclass: Model) {
       return this.invoice(invoiceParams)
     }
 
+    /**
+     * Add an invoice item for a specific Price ID to the customer's upcoming invoice.
+     */
     async tabPrice(
       price: string,
       quantity = 1,
@@ -151,6 +87,9 @@ export function ManagesInvoices<Model extends Constructor>(superclass: Model) {
       })
     }
 
+    /**
+     * Invoice the customer for the given Price ID and generate an invoice immediately.
+     */
     async invoicePrice(
       price: string,
       quantity = 1,
@@ -161,6 +100,9 @@ export function ManagesInvoices<Model extends Constructor>(superclass: Model) {
       return this.invoice(invoiceParams)
     }
 
+    /**
+     * Invoice the customer outside of the regular billing cycle.
+     */
     async invoice(
       params: Stripe.InvoiceCreateParams & Stripe.InvoicePayParams = {}
     ): Promise<Invoice> {
@@ -203,6 +145,9 @@ export function ManagesInvoices<Model extends Constructor>(superclass: Model) {
       }
     }
 
+    /**
+     * Create an invoice within Stripe.
+     */
     async createInvoice(params: Stripe.InvoiceCreateParams = {}): Promise<Invoice> {
       const customer = await this.asStripeCustomer()
       const options: Stripe.InvoiceCreateParams = {
@@ -220,6 +165,9 @@ export function ManagesInvoices<Model extends Constructor>(superclass: Model) {
       return new Invoice(this, invoice)
     }
 
+    /**
+     * Get the customer's upcoming invoice.
+     */
     async upcomingInvoice(
       params: Stripe.InvoiceRetrieveUpcomingParams = {}
     ): Promise<Invoice | null> {
@@ -241,6 +189,9 @@ export function ManagesInvoices<Model extends Constructor>(superclass: Model) {
       return null
     }
 
+    /**
+     * Find an invoice by ID.
+     */
     async findInvoice(id: string): Promise<Invoice | null> {
       try {
         const invoice = await this.stripe.invoices.retrieve(id)
@@ -251,6 +202,9 @@ export function ManagesInvoices<Model extends Constructor>(superclass: Model) {
       }
     }
 
+    /**
+     * Find an invoice or throw a 404 or 403 error.
+     */
     async findInvoiceOrFail(id: string): Promise<Invoice> {
       let invoice: Invoice | null
       try {
@@ -270,10 +224,9 @@ export function ManagesInvoices<Model extends Constructor>(superclass: Model) {
       return invoice
     }
 
-    downloadInvoice(id: string, data?: any, filename?: string) {
-      throw new Error('Method not implemented.')
-    }
-
+    /**
+     * Get a collection of the customer's invoices.
+     */
     async invoices(
       includePending = false,
       params: Stripe.InvoiceListParams = {}
@@ -294,6 +247,9 @@ export function ManagesInvoices<Model extends Constructor>(superclass: Model) {
       return invoices
     }
 
+    /**
+     * Get an array of the customer's invoices, including pending invoices.
+     */
     invoicesIncludingPending(params: Stripe.InvoiceListParams = {}): Promise<Invoice[]> {
       return this.invoices(true, params)
     }
