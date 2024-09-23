@@ -19,15 +19,36 @@ import { Codemods } from '@adonisjs/core/ace/codemods'
 export async function configure(command: ConfigureCommand) {
   const codemods = await command.createCodemods()
 
-  await codemods.updateRcFile((transformer) => {
-    transformer.addCommand('edgewire/commands')
-    transformer.addPreloadFile('#start/components')
-    transformer.addProvider('edgewire/providers/edgewire_provider')
+  await codemods.updateRcFile((rcFile) => {
+    rcFile.addCommand('@foadonis/shopkeeper/commands')
+    rcFile.addProvider('@foadonis/shopkeeper/shopkeeper_provider')
   })
 
+  await codemods.defineEnvValidations({
+    leadingComment: 'Variables for configuring the Shopkeeper Stripe SDK',
+    variables: {
+      STRIPE_KEY: 'Env.schema.string()',
+      STRIPE_SECRET: 'Env.schema.string()',
+      STRIPE_WEBHOOK_SECRET: 'Env.schema.string.optional()',
+    },
+  })
+
+  await codemods.defineEnvValidations({
+    leadingComment: 'Variables for configuring the Shopkeeper package',
+    variables: {
+      SHOPKEEPER_CURRENCY: 'Env.schema.string.optional()',
+      SHOPKEEPER_CURRENCY_LOCALE: 'Env.schema.string.optional()',
+    },
+  })
+
+  await generateConfig(codemods)
   await generateMigration(command, codemods, 'create_customer_stripe_columns')
   await generateMigration(command, codemods, 'create_subscriptions_table')
   await generateMigration(command, codemods, 'create_subscription_items_table')
+}
+
+async function generateConfig(codemods: Codemods) {
+  await codemods.makeUsingStub(stubsRoot, 'config/shopkeeper.stub', {})
 }
 
 async function generateMigration(command: ConfigureCommand, codemods: Codemods, name: string) {

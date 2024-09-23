@@ -44,7 +44,7 @@ export type ShopkeeperConfig = {
     /**
      * List of events that will be configured on the generated webhook using `node ace shopkeeper:webhook`.
      */
-    events: StripeEventTypes[]
+    events?: StripeEventTypes[]
   }
 
   /**
@@ -109,7 +109,7 @@ export type ShopkeeperConfig = {
   stripe?: Stripe.StripeConfig
 }
 
-type StripeEventTypes = Stripe.Event['type']
+export type StripeEventTypes = Stripe.Event['type']
 
 // TODO: IT works but it is slow asf
 // type StripeEventName<T extends string> = T extends `stripe:${infer U}`

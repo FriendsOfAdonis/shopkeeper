@@ -1,5 +1,6 @@
 import { defineConfig as defineDatabaseConfig } from '@adonisjs/lucid'
 import { defineConfig } from '../src/define_config.js'
+import { WEBHOOK_EVENTS } from '../src/constants.js'
 
 export default {
   rcFileContents: {
@@ -19,7 +20,7 @@ export default {
 
       webhook: {
         tolerance: 300,
-        events: [],
+        events: WEBHOOK_EVENTS,
       },
 
       models: {

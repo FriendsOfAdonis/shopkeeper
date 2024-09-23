@@ -66,6 +66,10 @@ ignitorFactory
           files: ['tests/configure.spec.ts'],
         },
         {
+          name: 'commands',
+          files: ['tests/commands/**/*.spec.(js|ts)'],
+        },
+        {
           name: 'functional',
           files: ['tests/functional/**/*.spec.(js|ts)'],
         },
