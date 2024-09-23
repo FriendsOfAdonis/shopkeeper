@@ -14,7 +14,7 @@
   "exports": {
     ".": "./build/index.js",
     "./types": "./build/src/types.js",
-    "./providers/*": "./build/providers/*.js",
+    "./shopkeeper_provider": "./build/providers/shopkeeper_provider.js",
     "./services/*": "./build/services/*.js",
     "./commands": "./build/commands/main.js",
     "./errors": "./build/src/errors/main.js",
