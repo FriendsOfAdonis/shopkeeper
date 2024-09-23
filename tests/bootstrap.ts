@@ -3,8 +3,6 @@ import { Config } from '@japa/runner/types'
 import { assert } from '@japa/assert'
 import { apiClient } from '@japa/api-client'
 import { fileSystem } from '@japa/file-system'
-import ace from '@adonisjs/core/services/ace'
-import Configure from '@adonisjs/core/commands/configure'
 import app from '@adonisjs/core/services/app'
 import { copyFile, mkdir, rmdir } from 'node:fs/promises'
 import testUtils from '@adonisjs/core/services/test_utils'
@@ -28,10 +26,6 @@ export const configureSuite: Config['configureSuite'] = (suite) => {
   if (['functional'].includes(suite.name)) {
     return suite
       .setup(async () => {
-        const router = await app.container.make('router')
-
-        router.use([() => import('@adonisjs/core/bodyparser_middleware')])
-
         await mkdir(app.migrationsPath(), { recursive: true })
         await copyFile(
           new URL('./fixtures/migrations/00000_create_users_table.ts', import.meta.url).pathname,

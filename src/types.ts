@@ -101,7 +101,7 @@ export type ShopkeeperConfig = {
   /**
    * Enables the routes registration like the webhook handler.
    */
-  registerRoutes?: boolean
+  registerRoutes: boolean
 
   /**
    * Defines the configuration used to create the Stripe SDK Instance.
@@ -120,7 +120,7 @@ type StripeEventTypes = Stripe.Event['type']
 // }
 
 type RelaxedStripeEventList = {
-  [key in `stripe:${StripeEventTypes}`]: any
+  [key in `stripe:${StripeEventTypes}` | `stripe:${StripeEventTypes}:handled`]: any
 }
 
 declare module '@adonisjs/core/types' {

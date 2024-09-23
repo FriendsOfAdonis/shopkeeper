@@ -6,4 +6,5 @@ export async function handleWebhook(ctx: HttpContext) {
   const payload = ctx.request.body() as Stripe.Event
 
   await emitter.emit(`stripe:${payload.type}`, payload)
+  await emitter.emit(`stripe:${payload.type}:handled`, payload)
 }

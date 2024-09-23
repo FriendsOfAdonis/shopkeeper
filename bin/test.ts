@@ -45,7 +45,10 @@ export const ignitorFactory = new IgnitorFactory()
   })
   .tap((app) => {
     app.booting(async () => {})
-    app.starting(async () => {})
+    app.starting(async () => {
+      const router = await app.container.make('router')
+      router.use([() => import('@adonisjs/core/bodyparser_middleware')])
+    })
     app.listen('SIGTERM', () => app.terminate())
     app.listenIf(app.managedByPm2, 'SIGINT', () => app.terminate())
   })

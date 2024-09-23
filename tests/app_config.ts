@@ -32,6 +32,8 @@ export default {
 
       keepIncompleteSubscriptionsActive: false,
       keepPastDueSubscriptionsActive: false,
+
+      registerRoutes: true,
     }),
     database: defineDatabaseConfig({
       connection: 'sqlite',
