@@ -20,7 +20,7 @@ Adonis Shopkeeper provides an expressive, fluent interface to Stripe's subscript
 
 ## Quickstart
 
-[Installation & Getting Started](https://friendsofadonis.github.io/docs/shopkeeper/getting-started)
+[Installation & Getting Started](https://friendsofadonis.github.io/docs/shopkeeper/installation)
 
 ## License
 
