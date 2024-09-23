@@ -18,7 +18,6 @@
     "./services/*": "./build/services/*.js",
     "./models/*": "./build/src/models/*.js",
     "./commands": "./build/commands/main.js",
-    "./errors": "./build/src/errors/main.js",
     "./mixins": "./build/src/mixins/main.js"
   },
   "scripts": {
