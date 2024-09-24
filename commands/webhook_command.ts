@@ -1,8 +1,8 @@
 import { BaseCommand, flags } from '@adonisjs/core/ace'
 import { CommandOptions } from '@adonisjs/core/types/ace'
-import shopkeeper from '../services/shopkeeper.js'
 import Stripe from 'stripe'
 import { STRIPE_VERSION, WEBHOOK_EVENTS } from '../src/constants.js'
+import { Shopkeeper } from '../src/shopkeeper.js'
 
 export default class WebhookCommand extends BaseCommand {
   static commandName = 'shopkeeper:webhook'
@@ -22,6 +22,7 @@ export default class WebhookCommand extends BaseCommand {
   declare apiVersion: Stripe.WebhookEndpointCreateParams.ApiVersion
 
   async run() {
+    const shopkeeper = await this.app.container.make(Shopkeeper)
     let url = this.url
     if (!url) {
       const appUrl = this.app.config.get<string | undefined>('app.appUrl')
