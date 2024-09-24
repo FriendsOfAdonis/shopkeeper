@@ -44,15 +44,13 @@ export default class ShopkeeperProvider {
         .as('shopkeeper.webhook')
 
       if (this.#config.webhook.secret) {
-        if (this.app.inProduction) {
-          throw InvalidConfigurationError.webhookSecretInProduction()
-        }
-
         const middleware = router.named({
           stripeWebhook: () => import('../src/middlewares/stripe_webhook_middleware.js'),
         })
 
         route.middleware(middleware.stripeWebhook())
+      } else if (this.app.inProduction) {
+        throw InvalidConfigurationError.webhookSecretInProduction()
       }
     }
   }
