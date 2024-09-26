@@ -39,7 +39,7 @@ export class Shopkeeper {
    */
   public formatAmount(amount: number, currency?: string): string {
     return Intl.NumberFormat(this.config.currencyLocale, { style: 'currency', currency }).format(
-      amount
+      amount / 100
     )
   }
 
