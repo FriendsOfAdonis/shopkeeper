@@ -235,10 +235,9 @@ export function ManagesInvoices<Model extends Constructor>(superclass: Model) {
 
       const invoices = []
 
-      for await (const invoice of this.stripe.invoices.list({
-        customer: stripeId,
-        ...params,
-      })) {
+      const stripeInvoices = await this.stripe.invoices.list({ customer: stripeId, ...params })
+
+      for (const invoice of stripeInvoices.data) {
         if (invoice.paid || includePending) {
           invoices.push(new Invoice(this, invoice))
         }
